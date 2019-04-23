@@ -10,267 +10,310 @@ import java.util.function.BiConsumer;
 /**
  * An implementation of skip lists.
  */
-public class SkipList<K,V> implements SimpleMap<K,V> {
+public class SkipList<K, V> implements SimpleMap<K, V> {
 
-  // +-----------+---------------------------------------------------
-  // | Constants |
-  // +-----------+
+	// +-----------+---------------------------------------------------
+	// | Constants |
+	// +-----------+
 
-  /**
-   * The initial height of the skip list.
-   */
-  static final int INITIAL_HEIGHT = 16;
+	/**
+	 * The initial height of the skip list.
+	 */
+	static final int INITIAL_HEIGHT = 16;
 
-  // +---------------+-----------------------------------------------
-  // | Static Fields |
-  // +---------------+
+	// +---------------+-----------------------------------------------
+	// | Static Fields |
+	// +---------------+
 
-  static Random rand = new Random();
+	static Random rand = new Random();
 
-  // +--------+------------------------------------------------------
-  // | Fields |
-  // +--------+
+	// +--------+------------------------------------------------------
+	// | Fields |
+	// +--------+
 
-  /**
-   * Pointers to all the front elements.
-   */
-  ArrayList<SLNode<K,V>> front;
+	/**
+	 * Pointers to all the front elements.
+	 */
+	ArrayList<SLNode<K, V>> front;
 
-  /**
-   * The comparator used to determine the ordering in the list.
-   */
-  Comparator<K> comparator;
+	/**
+	 * The comparator used to determine the ordering in the list.
+	 */
+	Comparator<K> comparator;
 
-  /**
-   * The number of values in the list.
-   */
-  int size;
-  
-  /**
-   * The current height of the skiplist.
-   */
-  int height;
+	/**
+	 * The number of values in the list.
+	 */
+	int size;
 
-  /**
-   * The probability used to determine the height of nodes.
-   */
-  double prob = 0.5;
+	/**
+	 * The current height of the skiplist.
+	 */
+	int height;
 
-  // +--------------+------------------------------------------------
-  // | Constructors |
-  // +--------------+
+	/**
+	 * The probability used to determine the height of nodes.
+	 */
+	double prob = 0.5;
 
-  /**
-   * Create a new skip list that orders values using the specified comparator.
-   */
-  public SkipList(Comparator<K> comparator) {
-    this.front = new ArrayList<SLNode<K,V>>(INITIAL_HEIGHT);
-    for (int i = 0; i < INITIAL_HEIGHT; i++) {
-      front.add(null);
-    } // for
-    this.comparator = comparator;
-    this.size = 0;
-    this.height = INITIAL_HEIGHT;
-  } // SkipList(Comparator<K>)
+	// +--------------+------------------------------------------------
+	// | Constructors |
+	// +--------------+
 
-  /**
-   * Create a new skip list that orders values using a not-very-clever 
-   * default comparator.
-   */
-  public SkipList() {
-    this((k1, k2) -> k1.toString().compareTo(k2.toString()));
-  } // SkipList()
+	/**
+	 * Create a new skip list that orders values using the specified comparator.
+	 */
+	public SkipList(Comparator<K> comparator) {
+		this.front = new ArrayList<SLNode<K, V>>(INITIAL_HEIGHT);
+		for (int i = 0; i < INITIAL_HEIGHT; i++) {
+			front.add(null);
+		} // for
+		this.comparator = comparator;
+		this.size = 0;
+		this.height = INITIAL_HEIGHT;
+	} // SkipList(Comparator<K>)
 
+	/**
+	 * Create a new skip list that orders values using a not-very-clever default
+	 * comparator.
+	 */
+	public SkipList() {
+		this((k1, k2) -> k1.toString().compareTo(k2.toString()));
+	} // SkipList()
 
-  // +-------------------+-------------------------------------------
-  // | SimpleMap methods |
-  // +-------------------+
+	// +-------------------+-------------------------------------------
+	// | SimpleMap methods |
+	// +-------------------+
 
-  @Override
-  public V set(K key, V value) {
-    // TODO Auto-generated method stub
-    return null;
-  } // set(K,V)
+	@Override
+	public V set(K key, V value) {
+		if (key == null) {
+			throw new NullPointerException("null key");
+		} // if
+		@SuppressWarnings("unchecked")
+		ArrayList<SLNode<K, V>> nodeList = (ArrayList<SLNode<K, V>>) front.clone();
+		SLNode<K, V> current;
+		for (int currHeight = this.height - 1; currHeight >= 0; currHeight--) {
+			current = nodeList.get(currHeight);
+			while (current.next.get(currHeight) != null
+					&& this.comparator.compare(key, current.next.get(currHeight).key) < 0) {
+				current = current.next.get(currHeight);
+				// current = current.next.get(currHeight);
+			}
 
-  @Override
-  public V get(K key) {
-    if (key == null) {
-      throw new NullPointerException("null key");
-    } // if
-    // TODO Auto-generated method stub
-    return null;
-  } // get(K,V)
+			if (current.next.get(currHeight).key.equals(key)) {
+				V toReturn = current.next.get(currHeight).value;
+				current.next.get(currHeight).value = value;
+				return toReturn;
+			} else {
+				nodeList.set(currHeight, current);
+			}
+		}
 
-  @Override
-  public int size() {
-    return this.size;
-  } // size()
+		SLNode<K, V> newNode = new SLNode<K, V>(key, value, randomHeight());
+		for (int i = 0; i < newNode.next.size(); i++) {
+			if(nodeList.get(i) != null) {
+				newNode.next.set(i, nodeList.get(i).next.get(i));
+				nodeList.get(i).next.set(i, newNode);
+			} else {
+				front.set(i, newNode);
+			}
+		}
+		return null;
+	} // set(K,V)
 
-  @Override
-  public boolean containsKey(K key) {
-    // TODO Auto-generated method stub
-    return false;
-  } // containsKey(K)
+	@Override
+	public V get(K key) {
+		if (key == null) {
+			throw new NullPointerException("null key");
+		} // if
+		SLNode<K, V> current = front.get(this.height - 1);
+		for (int currHeight = this.height - 1; currHeight >= 0; currHeight--) {
+			while (current.next.get(currHeight) != null
+					&& this.comparator.compare(key, current.next.get(currHeight).key) < 0) {
+				current = current.next.get(currHeight);
+			}
+			if (current.next.get(currHeight).key.equals(key)) {
+				return current.next.get(currHeight).value;
+			}
+		}
+		throw new IndexOutOfBoundsException("The key was not found.");
+	} // get(K,V)
 
-  @Override
-  public V remove(K key) {
-    // TODO Auto-generated method stub
-    return null;
-  } // remove(K)
+	@Override
+	public int size() {
+		return this.size;
+	} // size()
 
-  @Override
-  public Iterator<K> keys() {
-    return new Iterator<K>() {
-      Iterator<SLNode<K, V>> nit = SkipList.this.nodes();
+	@Override
+	public boolean containsKey(K key) {
+		try {
+			get(key);
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
+	} // containsKey(K)
 
-      @Override
-      public boolean hasNext() {
-        return nit.hasNext();
-      } // hasNext()
+	@Override
+	public V remove(K key) {
+		// TODO Auto-generated method stub
+		return null;
+	} // remove(K)
 
-      @Override
-      public K next() {
-        return nit.next().key;
-      } // next()
+	@Override
+	public Iterator<K> keys() {
+		return new Iterator<K>() {
+			Iterator<SLNode<K, V>> nit = SkipList.this.nodes();
 
-      @Override
-      public void remove() {
-        nit.remove();
-      } // remove()
-    };
-  } // keys()
+			@Override
+			public boolean hasNext() {
+				return nit.hasNext();
+			} // hasNext()
 
-  @Override
-  public Iterator<V> values() {
-    return new Iterator<V>() {
-      Iterator<SLNode<K, V>> nit = SkipList.this.nodes();
+			@Override
+			public K next() {
+				return nit.next().key;
+			} // next()
 
-      @Override
-      public boolean hasNext() {
-        return nit.hasNext();
-      } // hasNext()
+			@Override
+			public void remove() {
+				nit.remove();
+			} // remove()
+		};
+	} // keys()
 
-      @Override
-      public V next() {
-        return nit.next().value;
-      } // next()
+	@Override
+	public Iterator<V> values() {
+		return new Iterator<V>() {
+			Iterator<SLNode<K, V>> nit = SkipList.this.nodes();
 
-      @Override
-      public void remove() {
-        nit.remove();
-      } // remove()
-    };
-  } // values()
+			@Override
+			public boolean hasNext() {
+				return nit.hasNext();
+			} // hasNext()
 
-  @Override
-  public void forEach(BiConsumer<? super K, ? super V> action) {
-    // TODO Auto-generated method stub
+			@Override
+			public V next() {
+				return nit.next().value;
+			} // next()
 
-  } // forEach
+			@Override
+			public void remove() {
+				nit.remove();
+			} // remove()
+		};
+	} // values()
 
-  // +----------------------+----------------------------------------
-  // | Other public methods |
-  // +----------------------+
+	@Override
+	public void forEach(BiConsumer<? super K, ? super V> action) {
+		// TODO Auto-generated method stub
 
-  /**
-   * Dump the tree to some output location.
-   */
-  public void dump(PrintWriter pen) {
-    // Forthcoming
-  } // dump(PrintWriter)
+	} // forEach
 
-  // +---------+-----------------------------------------------------
-  // | Helpers |
-  // +---------+
+	// +----------------------+----------------------------------------
+	// | Other public methods |
+	// +----------------------+
 
-  /**
-   * Pick a random height for a new node.
-   */
-  int randomHeight() {
-    int result = 1;
-    while (rand.nextDouble() < prob) {
-      result = result + 1;
-    }
-    return result;
-  } // randomHeight()
+	/**
+	 * Dump the tree to some output location.
+	 */
+	public void dump(PrintWriter pen) {
+		// Forthcoming
+	} // dump(PrintWriter)
 
-  /**
-   * Get an iterator for all of the nodes. (Useful for implementing the 
-   * other iterators.)
-   */
-  Iterator<SLNode<K, V>> nodes() {
-    return new Iterator<SLNode<K, V>>() {
+	// +---------+-----------------------------------------------------
+	// | Helpers |
+	// +---------+
 
-      /**
-       * A reference to the next node to return.
-       */
-      SLNode<K,V> next = SkipList.this.front.get(0);
+	/**
+	 * Pick a random height for a new node.
+	 */
+	int randomHeight() {
+		int result = 1;
+		while (rand.nextDouble() < prob) {
+			result = result + 1;
+		}
+		return result;
+	} // randomHeight()
 
-      @Override
-      public boolean hasNext() {
-        return this.next != null;
-      } // hasNext()
+	/**
+	 * Get an iterator for all of the nodes. (Useful for implementing the other
+	 * iterators.)
+	 */
+	Iterator<SLNode<K, V>> nodes() {
+		return new Iterator<SLNode<K, V>>() {
 
-      @Override
-      public SLNode<K, V> next() {
-        if (this.next == null) {
-          throw new IllegalStateException();
-        }
-        SLNode<K, V> temp = this.next;
-        this.next = this.next.next.get(0);
-        return temp;
-      } // next();
-    }; // new Iterator
-  } // nodes()
+			/**
+			 * A reference to the next node to return.
+			 */
+			SLNode<K, V> next = SkipList.this.front.get(0);
 
-  // +---------+-----------------------------------------------------
-  // | Helpers |
-  // +---------+
+			@Override
+			public boolean hasNext() {
+				return this.next != null;
+			} // hasNext()
+
+			@Override
+			public SLNode<K, V> next() {
+				if (this.next == null) {
+					throw new IllegalStateException();
+				}
+				SLNode<K, V> temp = this.next;
+				this.next = this.next.next.get(0);
+				return temp;
+			} // next();
+		}; // new Iterator
+	} // nodes()
+
+	// +---------+-----------------------------------------------------
+	// | Helpers |
+	// +---------+
 
 } // class SkipList
 
 /**
  * Nodes in the skip list.
  */
-class SLNode<K,V> {
+class SLNode<K, V> {
 
-  // +--------+------------------------------------------------------
-  // | Fields |
-  // +--------+
+	// +--------+------------------------------------------------------
+	// | Fields |
+	// +--------+
 
-  /**
-   * The key.
-   */
-  K key;
+	/**
+	 * The key.
+	 */
+	K key;
 
-  /**
-   * The value.
-   */
-  V value;
+	/**
+	 * The value.
+	 */
+	V value;
 
-  /**
-   * Pointers to the next nodes.
-   */
-  ArrayList<SLNode<K,V>> next;
+	/**
+	 * Pointers to the next nodes.
+	 */
+	ArrayList<SLNode<K, V>> next;
 
-  // +--------------+------------------------------------------------
-  // | Constructors |
-  // +--------------+
+	// +--------------+------------------------------------------------
+	// | Constructors |
+	// +--------------+
 
-  /**
-   * Create a new node of height n with the specified key and value.
-   */
-  public SLNode(K key, V value, int n) {
-    this.key = key;
-    this.value = value;
-    this.next = new ArrayList<SLNode<K,V>>(n);
-    for (int i = 0; i < n; i++) {
-      this.next.add(null);
-    } // for
-  } // SLNode(K, V, int)
+	/**
+	 * Create a new node of height n with the specified key and value.
+	 */
+	public SLNode(K key, V value, int n) {
+		this.key = key;
+		this.value = value;
+		this.next = new ArrayList<SLNode<K, V>>(n);
+		for (int i = 0; i < n; i++) {
+			this.next.add(null);
+		} // for
+	} // SLNode(K, V, int)
 
-  // +---------+-----------------------------------------------------
-  // | Methods |
-  // +---------+
+	// +---------+-----------------------------------------------------
+	// | Methods |
+	// +---------+
 
 } // SLNode<K,V>
