@@ -86,22 +86,31 @@ public class SkipList<K, V> implements SimpleMap<K, V> {
 	// +-------------------+
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public V set(K key, V value) {
 		if (key == null) {
 			throw new NullPointerException("null key");
 		} // if
-		@SuppressWarnings("unchecked")
+
+		if (front.get(0) == null) {
+			SLNode<K, V> newNode = new SLNode<K, V>(key, value, randomHeight());
+			for (int i = 0; i < newNode.next.size(); i++) {
+				this.front.set(i, newNode);
+			}
+			return null;
+		}
 		ArrayList<SLNode<K, V>> nodeList = (ArrayList<SLNode<K, V>>) front.clone();
 		SLNode<K, V> current;
 		for (int currHeight = this.height - 1; currHeight >= 0; currHeight--) {
 			current = nodeList.get(currHeight);
-			while (current.next.get(currHeight) != null
-					&& this.comparator.compare(key, current.next.get(currHeight).key) < 0) {
+			while (current != null && current.next.get(currHeight) != null
+					&& this.comparator.compare(key, current.next.get(currHeight).key) > 0) {
 				current = current.next.get(currHeight);
 				// current = current.next.get(currHeight);
 			}
 
-			if (current.next.get(currHeight).key.equals(key)) {
+			if (current != null && current.next.get(currHeight) != null
+					&& current.next.get(currHeight).key.equals(key)) {
 				V toReturn = current.next.get(currHeight).value;
 				current.next.get(currHeight).value = value;
 				return toReturn;
@@ -112,11 +121,16 @@ public class SkipList<K, V> implements SimpleMap<K, V> {
 
 		SLNode<K, V> newNode = new SLNode<K, V>(key, value, randomHeight());
 		for (int i = 0; i < newNode.next.size(); i++) {
-			if(nodeList.get(i) != null) {
+			if (nodeList.get(i) == null) {
+				newNode.next.set(i, null);
+				front.set(i, newNode);
+			} else if (nodeList.get(i).key.equals(this.front.get(i).key)) {
+				newNode.next.set(i, front.get(i));
+				front.set(i, newNode);
+
+			} else {
 				newNode.next.set(i, nodeList.get(i).next.get(i));
 				nodeList.get(i).next.set(i, newNode);
-			} else {
-				front.set(i, newNode);
 			}
 		}
 		return null;
@@ -155,10 +169,45 @@ public class SkipList<K, V> implements SimpleMap<K, V> {
 		}
 	} // containsKey(K)
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public V remove(K key) {
-		// TODO Auto-generated method stub
-		return null;
+		if (key == null) {
+			throw new NullPointerException("null key");
+		}
+
+		if (this.front.get(0) == null) {
+			return null;
+		}
+
+		ArrayList<SLNode<K, V>> nodeList = (ArrayList<SLNode<K, V>>) front.clone();
+		SLNode<K, V> current = null;
+		for (int currHeight = this.height - 1; currHeight >= 0; currHeight--) {
+			current = nodeList.get(currHeight);
+			while (current.next.get(currHeight) != null
+					&& this.comparator.compare(key, current.next.get(currHeight).key) < 0) {
+				current = current.next.get(currHeight);
+			}
+			nodeList.set(currHeight, current);
+		}
+
+		if (current.next.get(0) == null || this.comparator.compare(current.next.get(0).key, key) > 0) {
+			return null;
+		} else {
+			V toReturn = null;
+			for (int i = 0; i < this.height; i++) {
+				if (nodeList.get(i) != null) {
+					if (nodeList.get(i).key.equals(key)) {
+						toReturn = nodeList.get(i).value;
+						this.front.set(i, nodeList.get(i).next.get(i));
+					} else {
+						toReturn = nodeList.get(i).next.get(i).value;
+						nodeList.get(i).next.set(i, nodeList.get(i).next.get(i).next.get(i));
+					}
+				}
+			}
+			return toReturn;
+		}
 	} // remove(K)
 
 	@Override
@@ -207,7 +256,12 @@ public class SkipList<K, V> implements SimpleMap<K, V> {
 
 	@Override
 	public void forEach(BiConsumer<? super K, ? super V> action) {
-		// TODO Auto-generated method stub
+		Iterator<SLNode<K, V>> nodes = this.nodes();
+		SLNode<K, V> current;
+		while (nodes.hasNext()) {
+			current = nodes.next();
+			action.accept(current.key, current.value);
+		}
 
 	} // forEach
 
@@ -219,8 +273,66 @@ public class SkipList<K, V> implements SimpleMap<K, V> {
 	 * Dump the tree to some output location.
 	 */
 	public void dump(PrintWriter pen) {
-		// Forthcoming
+		String leading = "          ";
+
+		SLNode<K, V> current = front.get(0);
+
+		// Print some X's at the start
+		pen.print(leading);
+		for (int level = 0; level < this.height; level++) {
+			pen.print(" X");
+		} // for
+		pen.println();
+		printLinks(pen, leading);
+
+		while (current != null) {
+			// Print out the key as a fixed-width field.
+			// (There's probably a better way to do this.)
+			String str;
+			if (current.key == null) {
+				str = "<null>";
+			} else {
+				str = current.key.toString();
+			} // if/else
+			if (str.length() < leading.length()) {
+				pen.print(leading.substring(str.length()) + str);
+			} else {
+				pen.print(str.substring(0, leading.length()));
+			} // if/else
+
+			// Print an indication for the links it has.
+			for (int level = 0; level < current.next.size(); level++) {
+				pen.print("-*");
+			} // for
+				// Print an indication for the links it lacks.
+			for (int level = current.next.size(); level < this.height; level++) {
+				pen.print(" |");
+			} // for
+			pen.println();
+			printLinks(pen, leading);
+
+			current = current.next.get(0);
+		} // while
+
+		// Print some O's at the start
+		pen.print(leading);
+		for (int level = 0; level < this.height; level++) {
+			pen.print(" O");
+		} // for
+		pen.println();
+
 	} // dump(PrintWriter)
+
+	/**
+	 * Print some links (for dump).
+	 */
+	void printLinks(PrintWriter pen, String leading) {
+		pen.print(leading);
+		for (int level = 0; level < this.height; level++) {
+			pen.print(" |");
+		} // for
+		pen.println();
+	} // printLinks
 
 	// +---------+-----------------------------------------------------
 	// | Helpers |
@@ -234,8 +346,8 @@ public class SkipList<K, V> implements SimpleMap<K, V> {
 		while (rand.nextDouble() < prob) {
 			result = result + 1;
 		}
-		return result;
-	} // randomHeight()
+		return Math.min(result, this.height);
+	} // random\Height()
 
 	/**
 	 * Get an iterator for all of the nodes. (Useful for implementing the other
