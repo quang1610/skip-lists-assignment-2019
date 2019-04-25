@@ -209,6 +209,10 @@ public class SkipListTests {
   public void simpleTest() {
     setup();
     set("hello");
+    // extra inspection
+    PrintWriter pen = new PrintWriter(System.out, true);
+    strings.dump(pen);
+    //
     assertTrue(strings.containsKey("hello"));
     assertFalse(strings.containsKey("goodbye"));
   } // simpleTest()
