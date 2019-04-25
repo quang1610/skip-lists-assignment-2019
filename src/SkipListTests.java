@@ -3,6 +3,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
 import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.Test;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -20,16 +21,15 @@ public class SkipListTests {
   /**
    * Names of some numbers.
    */
-  static final String numbers[] =
-      {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
-          "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen",
-          "sixteen", "seventeen", "eighteen", "nineteen"};
+  static final String numbers[] = {"zero", "one", "two", "three", "four", "five", "six", "seven",
+      "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+      "seventeen", "eighteen", "nineteen"};
 
   /**
    * Names of more numbers.
    */
-  static final String tens[] = {"", "", "twenty", "thirty", "forty", "fifty",
-      "sixty", "seventy", "eighty", "ninety"};
+  static final String tens[] =
+      {"", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"};
 
   // +--------+----------------------------------------------------------
   // | Fields |
@@ -62,8 +62,8 @@ public class SkipListTests {
   // +---------+
 
   /**
-   * Set up everything.  Unfortunately, @BeforeEach doesn't seem
-   * to be working, so we do this manually.
+   * Set up everything. Unfortunately, @BeforeEach doesn't seem to be working, so we do this
+   * manually.
    */
   @BeforeEach
   public void setup() {
@@ -76,9 +76,9 @@ public class SkipListTests {
   /**
    * Dump a SkipList to stderr.
    */
-  static <K,V> void dump(SkipList<K,V> map) {
+  static <K, V> void dump(SkipList<K, V> map) {
     System.err.print("[");
-    map.forEach((key,value) -> System.err.println(key + ":" + value + " "));
+    map.forEach((key, value) -> System.err.println(key + ":" + value + " "));
     System.err.println("]");
   } // dump
 
@@ -203,19 +203,18 @@ public class SkipListTests {
   // +-------------+
 
   /**
-   * A really simple test.  Add an element and make sure that it's there.
+   * A really simple test. Add an element and make sure that it's there.
    */
   @Test
   public void simpleTest() {
     setup();
     set("hello");
     // extra inspection
-    PrintWriter pen = new PrintWriter(System.out, true);
-    strings.dump(pen);
     //
     assertTrue(strings.containsKey("hello"));
     assertFalse(strings.containsKey("goodbye"));
   } // simpleTest()
+
 
   /**
    * Another simple test. The list should not contain anything when we start out.
@@ -294,7 +293,7 @@ public class SkipListTests {
           set(rand);
         } // if it's not already there.
         if (!ints.containsKey(rand)) {
-          log("After adding " + rand + ", contains(" + rand +") fails");
+          log("After adding " + rand + ", contains(" + rand + ") fails");
           ok = false;
         } // if (!ints.contains(rand))
       } // if we add
@@ -303,7 +302,7 @@ public class SkipListTests {
         remove(rand);
         keys.remove((Integer) rand);
         if (ints.containsKey(rand)) {
-          log("After removing " + rand + ", contains(" + rand +") succeeds");
+          log("After removing " + rand + ", contains(" + rand + ") succeeds");
           ok = false;
         } // if ints.contains(rand)
       } // if we remove
@@ -323,7 +322,147 @@ public class SkipListTests {
       fail("Operations failed");
     } // if (!ok)
   } // randomTest()
-  
+
+  /**
+   * Test for height calculations
+   */
+
+  // +----------------------+-------------------------------------------------
+  // | 6 additional tests |
+  // +--------------------+
+  // test if the height of the list (aka the height of the highest node in the list) is update
+  // correctly after adding and removing the node.
+  @Test
+  public void heightTestAdding() {
+    setup();
+    for (int i = 0; i < 100; i++) {
+      set(random.nextInt(1000));
+      checkHeight(ints);
+    }
+  }
+
+  @Test
+  public void heightTestRemoving() {
+    setup();
+    // init
+    ArrayList<Integer> keyToBeDeleted = new ArrayList<Integer>();
+    for (int i = 0; i < 100; i++) {
+      int num = random.nextInt(1000);
+      set(num);
+
+      if (random.nextBoolean()) {
+        keyToBeDeleted.add(num);
+      }
+    }
+
+    // remove
+    for (int i : keyToBeDeleted) {
+      remove(i);
+      checkHeight(ints);
+    }
+  }
+
+  @Test
+  public void simpleRemove() {
+    setup();
+    set(6);
+    set(4);
+    set(8);
+    remove(6);
+    assertTrue("test remove edge case; remove 6, check current size", ints.size() == 2);
+    assertFalse("test remove edge case; remove 6, check 6 is not in the list anymore",
+        ints.containsKey(6));
+    assertTrue("test remove edge case; remove 6, elements in the list are in order",
+        inOrder(ints.keys()));
+
+    set(6);
+    remove(8);
+    assertTrue("test remove edge case; remove 8, check current size", ints.size() == 2);
+    assertFalse("test remove edge case; remove 8, check 8 is not in the list anymore",
+        ints.containsKey(8));
+    assertTrue("test remove edge case; remove 8, elements in the list are in order",
+        inOrder(ints.keys()));
+
+    set(8);
+    remove(4);
+    assertTrue("test remove edge case; remove 4, check current size", ints.size() == 2);
+    assertFalse("test remove edge case; remove 4, check 4 is not in the list anymore",
+        ints.containsKey(4));
+    assertTrue("test remove edge case; remove 4, elements in the list are in order",
+        inOrder(ints.keys()));
+  }
+
+
+  @Test
+  public void testSetExceptions() {
+    setup();
+    set(7);
+    try {
+      ints.set(null, "hello");
+      fail("Did not throw expected exceptions.");
+    } catch (Exception e) {
+    }
+  }
+
+  @Test
+  public void testGetExceptions() {
+    setup();
+    set(7);
+    try {
+      ints.get(null);
+      fail("Did not throw expected exceptions.");
+    } catch (Exception e) {
+    }
+    try {
+      ints.get(8);
+      fail("Did not throw expected exceptions.");
+    } catch (Exception e) {
+    }
+  }
+
+  @Test
+  public void testRemoveExceptions() {
+    setup();
+    set(7);
+    try {
+      ints.remove(null);
+      fail("Did not throw expected exceptions.");
+    } catch (Exception e) {
+    }
+    assertTrue("Test remove returns null for non-existing elemtns", null == ints.remove(8));
+  }
+
+  @Test
+  public void testForEach() {
+    setup();
+    // init
+    ArrayList<Integer> keysAdded = new ArrayList<Integer>();
+    for (int i = 0; i < 100; i++) {
+      set(i);
+      keysAdded.add(i);
+    }
+    ArrayList<Integer> gottenFromList = new ArrayList<Integer>();
+    ints.forEach((x, y) -> gottenFromList.add(x));
+    int n = 0;
+    for (int i = 0; i < 100; i++) {
+      assertTrue("Check foreach values", i == gottenFromList.get(i));
+    }
+  }
+
+
+  private <K, V> void checkHeight(SkipList<K, V> skipList) {
+    assertTrue("Checking height of skiplist", highestHeight(skipList) == skipList.height);
+  }
+
+  private <K, V> int highestHeight(SkipList<K, V> skipList) {
+    Iterator<SLNode<K, V>> it = skipList.nodes();
+    int highestHeight = 0;
+    while (it.hasNext()) {
+      highestHeight = Math.max(highestHeight, it.next().getHeight());
+    }
+    return highestHeight;
+  }
+
   public static void main(String[] args) {
     SkipListTests slt = new SkipListTests();
     slt.setup();

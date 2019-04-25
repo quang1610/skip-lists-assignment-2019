@@ -18,6 +18,7 @@ public class SkipList<K, V> implements SimpleMap<K, V> {
    * The initial height of the skip list.
    */
   static final int INITIAL_HEIGHT = 16;
+  static long operationCount = 0;
 
   // +---------------+-----------------------------------------------
   // | Static Fields |
@@ -129,7 +130,7 @@ public class SkipList<K, V> implements SimpleMap<K, V> {
             && comeBefore(temp.next(currentLevel).key, key)) {
           temp = temp.next(currentLevel);
         }
-
+        operationCount++;
         // if we found the key already exists in the list, we update the value of that node and exit
         // early!!
         if (temp.next(currentLevel) != null && key.equals(temp.next(currentLevel).key)) {
@@ -190,7 +191,7 @@ public class SkipList<K, V> implements SimpleMap<K, V> {
       while (temp.next(currentLevel) != null && comeBefore(temp.next(currentLevel).key, key)) {
         temp = temp.next(currentLevel);
       }
-
+      operationCount++;
       if (temp.next(currentLevel) != null && temp.next(currentLevel).key.equals(key)) {
         return temp.next(currentLevel).value;
       }
@@ -244,6 +245,7 @@ public class SkipList<K, V> implements SimpleMap<K, V> {
           && comeBefore(temp.next(currentLevel).key, key)) {
         temp = temp.next(currentLevel);
       }
+      operationCount++;
       updatePointers.set(currentLevel, temp);
     } // for loop. We must keep going till level 0.
 
@@ -520,6 +522,7 @@ class SLNode<K, V> {
    * sort hand to get an element in this.next
    */
   public SLNode<K, V> next(int i) {
+    SkipList.operationCount++;
     return this.next.get(i);
   }
 
@@ -527,6 +530,7 @@ class SLNode<K, V> {
    * short cut to set this.next
    */
   public void setNext(int i, SLNode<K, V> newNode) {
+    SkipList.operationCount++;
     this.next.set(i, newNode);
   }
 
