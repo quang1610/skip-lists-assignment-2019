@@ -331,7 +331,7 @@ public class SkipListTests {
   // | 6 additional tests |
   // +--------------------+
   // test if the height of the list (aka the height of the highest node in the list) is update
-  // correctly after adding and removing the node.
+  // correctly after adding
   @Test
   public void heightTestAdding() {
     setup();
@@ -341,6 +341,9 @@ public class SkipListTests {
     }
   }
 
+
+  // test if the height of the list (aka the height of the highest node in the list) is update
+  // correctly after adding
   @Test
   public void heightTestRemoving() {
     setup();
@@ -362,6 +365,7 @@ public class SkipListTests {
     }
   }
 
+  // Test removing items in the middle, at the end, and at the front of a list
   @Test
   public void simpleRemove() {
     setup();
@@ -393,6 +397,7 @@ public class SkipListTests {
   }
 
 
+  // test to ensure that set throw the appropriate exceptions
   @Test
   public void testSetExceptions() {
     setup();
@@ -404,6 +409,7 @@ public class SkipListTests {
     }
   }
 
+  // test to ensure that get throw the appropriate exceptions
   @Test
   public void testGetExceptions() {
     setup();
@@ -420,6 +426,8 @@ public class SkipListTests {
     }
   }
 
+
+  // test to ensure that remove throw the appropriate exceptions
   @Test
   public void testRemoveExceptions() {
     setup();
@@ -432,10 +440,10 @@ public class SkipListTests {
     assertTrue("Test remove returns null for non-existing elemtns", null == ints.remove(8));
   }
 
+  // Test to ensure that forEach performs an action on every element in the list (in order)
   @Test
   public void testForEach() {
     setup();
-    // init
     ArrayList<Integer> keysAdded = new ArrayList<Integer>();
     for (int i = 0; i < 100; i++) {
       set(i);
@@ -443,17 +451,18 @@ public class SkipListTests {
     }
     ArrayList<Integer> gottenFromList = new ArrayList<Integer>();
     ints.forEach((x, y) -> gottenFromList.add(x));
-    int n = 0;
     for (int i = 0; i < 100; i++) {
       assertTrue("Check foreach values", i == gottenFromList.get(i));
     }
   }
 
 
+  // ensure that the height of the list matches the height of the highest node
   private <K, V> void checkHeight(SkipList<K, V> skipList) {
     assertTrue("Checking height of skiplist", highestHeight(skipList) == skipList.height);
   }
 
+  // Find the highest node height in the list
   private <K, V> int highestHeight(SkipList<K, V> skipList) {
     Iterator<SLNode<K, V>> it = skipList.nodes();
     int highestHeight = 0;
