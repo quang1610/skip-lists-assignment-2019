@@ -4,7 +4,7 @@ import java.io.PrintWriter;
 import java.math.BigInteger;
 
 
-// find more about the result in the EfficiencyAnalysis.pdf in the git repo.
+// find more about the result in the Efficiency_Analysis.pdf in the git repo.
 public class EfficiencyTests {
   static SkipList<Integer, String> myList = new SkipList<Integer, String>();
   static ArrayList<Integer> keys = new ArrayList<Integer>();

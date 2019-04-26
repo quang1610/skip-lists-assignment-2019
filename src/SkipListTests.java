@@ -70,7 +70,6 @@ public class SkipListTests {
     this.ints = new SkipList<Integer, String>((i, j) -> i - j);
     this.strings = new SkipList<String, String>((s, t) -> s.compareTo(t));
     this.operations = new ArrayList<String>();
-    System.err.println("SETUP");
   } // setup
 
   /**
@@ -146,20 +145,20 @@ public class SkipListTests {
   // +--------------------+
 
   /**
-   * Add an integer to the ints list.
+   * Set an entry in the ints list.
    */
   void set(Integer i) {
     operations.add("set(" + i + ");");
     ints.set(i, value(i));
-  } // add
+  } // set(Integer)
 
   /**
-   * Add a string to the strings list.
+   * Set an entry in the strings list.
    */
   void set(String str) {
     operations.add("set(\"" + str + "\");");
     strings.set(str, value(str));
-  } // add(String)
+  } // set(String)
 
   /**
    * Remove an integer from the ints list.
@@ -172,7 +171,7 @@ public class SkipListTests {
   /**
    * Remove a string from the strings list.
    */
-  void add(String str) {
+  void remove(String str) {
     operations.add("remove(\"" + str + "\");");
     strings.remove(str);
   } // remove(String)
@@ -209,12 +208,9 @@ public class SkipListTests {
   public void simpleTest() {
     setup();
     set("hello");
-    // extra inspection
-    //
     assertTrue(strings.containsKey("hello"));
     assertFalse(strings.containsKey("goodbye"));
   } // simpleTest()
-
 
   /**
    * Another simple test. The list should not contain anything when we start out.
@@ -323,13 +319,16 @@ public class SkipListTests {
     } // if (!ok)
   } // randomTest()
 
-  /**
-   * Test for height calculations
-   */
+  public static void main(String[] args) {
+    SkipListTests slt = new SkipListTests();
+    slt.setup();
+    slt.simpleTest();
+  } // main
 
-  // +----------------------+-------------------------------------------------
+  // +--------------------+-------------------------------------------------
   // | 6 additional tests |
   // +--------------------+
+
   // test if the height of the list (aka the height of the highest node in the list) is update
   // correctly after adding
   @Test
@@ -456,6 +455,9 @@ public class SkipListTests {
     }
   }
 
+  // +---------------------+-------------------------------------------------
+  // | some helper methods |
+  // +---------------------+
 
   // ensure that the height of the list matches the height of the highest node
   private <K, V> void checkHeight(SkipList<K, V> skipList) {
@@ -472,9 +474,4 @@ public class SkipListTests {
     return highestHeight;
   }
 
-  public static void main(String[] args) {
-    SkipListTests slt = new SkipListTests();
-    slt.setup();
-    slt.simpleTest();
-  } // main
 } // class SkipListTests
